@@ -1,0 +1,76 @@
+{
+  "sample_id": "9mr2_ab1",
+  "pdb_id": "9mr2",
+  "source_db": "sabdab",
+  "release_date": "2025-11-26",
+  "resolution": 3.79,
+  "split": "after_20250630",
+  "ab_type": "VH-VL",
+  "heavy_chain_id": "A",
+  "light_chain_id": "B",
+  "antigen_chain_ids": [
+    "C"
+  ],
+  "chain_mapping": {
+    "A": "H",
+    "B": "L",
+    "C": "A"
+  },
+  "interaction_statistics": {
+    "C": {
+      "new_chain_id": "A",
+      "contacting_residues": 23
+    }
+  },
+  "sequence_resolution": {
+    "H": {
+      "source": "direct_match",
+      "x_count": 0,
+      "x_fraction": 0.0,
+      "used_structure_fallback": false
+    },
+    "L": {
+      "source": "direct_match",
+      "x_count": 0,
+      "x_fraction": 0.0,
+      "used_structure_fallback": false
+    },
+    "A": {
+      "source": "structure_fallback",
+      "x_count": 0,
+      "x_fraction": 0.0,
+      "used_structure_fallback": true
+    }
+  },
+  "fallback_chains": [
+    "A"
+  ],
+  "qc_flags": {
+    "antigen_qc": {
+      "A": {
+        "ag_chain": "A",
+        "x_count": 0,
+        "x_fraction": 0.0,
+        "interface_x_fraction": 0.0,
+        "interface_total": 23,
+        "interface_x_count": 0
+      }
+    },
+    "antibody_qc": {
+      "H": {
+        "chain": "H",
+        "cdr_x_count": 0,
+        "cdr_total": 26,
+        "cdr_x_fraction": 0.0,
+        "chain_type": "H"
+      },
+      "L": {
+        "chain": "L",
+        "cdr_x_count": 0,
+        "cdr_total": 31,
+        "cdr_x_fraction": 0.0,
+        "chain_type": "L"
+      }
+    }
+  }
+}

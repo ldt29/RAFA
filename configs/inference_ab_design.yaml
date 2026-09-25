@@ -1,0 +1,113 @@
+run_name_: ab_design_inference
+ckpt_path: ./checkpoints
+ckpt_name: design_rl.ckpt
+autoencoder_ckpt_path: ./checkpoints/ae.ckpt
+
+# Job management
+ncpus_: 24
+seed: 5
+gen_njobs: 1
+eval_njobs: 1
+
+# Antibody design inference settings
+ab_design_mode: True
+
+# Evaluation settings
+ab_eval_metrics: True                 # Enable evaluation metrics after generation
+ab_eval_tmscore: True                 # Enable TMscore computation
+ab_eval_lddt: True                    # Enable LDDT computation
+ab_eval_dockq: True                   # Enable DockQ (requires DockQ installation)
+
+# ── Launch commands ────────────────────────────────────────────────────────────
+# Single GPU (default):
+#   python proteinfoundation/generate.py --config_name inference_ab_design
+#
+# Multi-GPU (4 cards):
+#   torchrun --nproc_per_node=4 proteinfoundation/generate.py --config_name inference_ab_design
+#
+# Multi-GPU on SLURM:
+#   srun --ntasks-per-node=4 --gpus-per-task=1 \
+#     torchrun --nproc_per_node=4 proteinfoundation/generate.py --config_name inference_ab_design
+#
+# Each rank processes ~(N_test / n_gpu) structures; all ranks save to the same
+# inference/ directory with unique job_id tags ({pdb_id}_job_{rank}_id_{n}).
+# ───────────────────────────────────────────────────────────────────────────────
+
+generation:
+  n_recycle: 0
+
+  # General sampling params
+  args:
+    nsteps: 400
+    self_cond: True
+    fold_cond: False
+
+    # guidance
+    guidance_w: 1.0
+    ag_ratio: 0.0
+    ag_ckpt_path: null
+
+    save_trajectory_every: 0
+
+  # Antibody design inference dataset - reads from preprocessed structure_dataset test split
+  dataset:
+    data_dir: ${oc.env:DATASET,/path/to/structure_dataset}
+    split: test
+    nsamples: 1
+    max_antibody_len: 450
+    max_antigen_len: 500
+    batch_size: 4              # parallel inference: run B epitope conditions simultaneously
+
+  # Metrics - disable all for quick generation
+  metric:
+    compute_designability: False
+    designability_folding_models: ["esmfold"]
+    compute_codesignability: False
+    codesignability_folding_models: ["esmfold"]
+    compute_co_sequence_recovery: False
+    compute_novelty_pdb: False
+    compute_novelty_afdb: False
+    compute_novelty_afdb_rep_v4: False
+    compute_novelty_afdb_rep_v4_geniefilters_maxlen512: False
+    compute_motif_scaffolding: False
+    compute_motif_backbone_designability: False
+    compute_motif_aa_designability: False
+    compute_motif_rmsd: False
+    keep_folding_outputs: False
+    compute_binder_metrics: False
+    compute_multimer_metrics: False
+    compute_fid: False
+    metric_factory: null
+
+  # Model-specific sampling arguments
+  model:
+    bb_ca:
+      schedule:
+        mode: log
+        p: 2.0
+      gt:
+        mode: "1/t"
+        p: 1.0
+        clamp_val: null
+      simulation_step_params:
+        sampling_mode: sc
+        sc_scale_noise: 0.1
+        sc_scale_score: 1.0
+        t_lim_ode: 0.98
+        t_lim_ode_below: 0.02
+        center_every_step: False  # ab_design: ab CoM != 0 relative to epitope origin
+    local_latents:
+      schedule:
+        mode: power
+        p: 2.0
+      gt:
+        mode: "tan"
+        p: 1.0
+        clamp_val: null
+      simulation_step_params:
+        sampling_mode: sc
+        sc_scale_noise: 0.1
+        sc_scale_score: 1.0
+        t_lim_ode: 0.98
+        t_lim_ode_below: 0.02
+        center_every_step: False

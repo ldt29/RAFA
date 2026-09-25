@@ -1,0 +1,153 @@
+# Affinity-primary RL smoke/formal entrypoint.
+# The pretrained model is the common frozen starting point; this file does not
+# start pretraining. Use a unique artifact/run directory per invocation.
+
+ckpt_path: ./checkpoints
+ckpt_name: design_base.ckpt
+autoencoder_ckpt_path: ./checkpoints/ae.ckpt
+seed: 5
+
+dataset:
+  data_dir: ${oc.env:DATASET,/path/to/structure_dataset}
+  split: train
+  batch_size: 1
+  num_workers: 0
+  max_antibody_len: 450
+  max_antigen_len: 500
+  mask_strategy: mixed
+  mask_strategy_probs: [0.5, 0.3, 0.2]
+  # First RL phase is conventional VH-VL only; VHH transfer is a later arm.
+  conventional_only: true
+  vhh_only: false
+
+posttraining:
+  method: graft_fm
+  algorithm: graft
+  # GRAFT's best-of-K-aligned upper-tail baseline.  For K=8, 0.875 is the
+  # 1 - 1/K target; alpha=0.5 is the GRPO/median ablation.
+  alpha: 0.875
+  # Optional G4 FM-loss trust region against the frozen base snapshot.  Pilot
+  # evidence favors a stronger constraint for the prospective arm; set to 0
+  # only for the explicitly labelled alpha-only ablation.
+  trust_region_weight: 1.0
+  K: 8
+  nsteps_sample: 50
+  # A pre-fix high-lr engineering pilot drifted; use the conservative 1e-6
+  # setting for the corrected formal arm and retain 5e-6 only as an ablation.
+  lr: 1.0e-6
+  # Adam is the frozen default for historical arms.  Trust-region sensitivity
+  # arms may explicitly select SGD because Adam largely removes scalar
+  # trust-penalty effects through its second-moment normalization.
+  optimizer: adam
+  optimizer_momentum: 0.0
+  max_iters: 150
+  freeze_pair_update: true
+  trainable_scope: all  # all | output_heads (opt-in drift diagnostic)
+  decode_for_diversity: true
+
+  # Main prospective reward: native-antibody-free affinity-related proxy.
+  # DockQ is not evaluated in this reward path; old tiers are diagnostics only.
+  reward_tier: 2_affinity
+  affinity_weight: 1.0
+  # Optional frozen sequence teacher fit on independent experimental affinity
+  # measurements.  Keep the path explicit so a missing calibration artifact
+  # fails closed instead of silently changing the reward.
+  affinity_teacher_path: ./assets/affinity_sequence_teacher.npz
+  affinity_teacher_weight: 0.25
+  # Sequence/structure fusion: linear is the historical arm; geometric is a
+  # stricter affinity-consensus objective used only by explicitly named runs.
+  affinity_teacher_fusion: linear
+  clash_weight: 0.01
+  affinity_kwargs:
+    weights:
+      contact_coverage: 0.60
+      buried_surface_proxy: 0.25
+      interface_compactness: 0.15
+    # Explicit schema entries keep Hydra overrides for reward-gate sweeps
+    # reproducible instead of relying on untyped ``+`` keys.
+    clash_gate_strength: 12.0
+    clash_tolerance: 0.05
+    # The default remains the conservative historical prior.  Explicit
+    # sensitivity arms may widen this tolerance after inspecting generated
+    # radius-of-gyration diagnostics; the reward stays affinity-proxy based.
+    rg_expected_nm: 1.80
+    rg_tolerance_nm: 0.60
+    # Keep zero for historical/queued arms. Geometry-corrected arms use an
+    # explicit soft penalty instead of multiplying the whole proxy by a
+    # near-zero radius prior.
+    radius_penalty_weight: 0.0
+
+  # R_free composite arm (opt-in; the default historical arm above remains
+  # unchanged).  The surrogate is fit train-only on Protenix priors and
+  # evaluated on a disjoint prior split before it is allowed into RL.
+  fold_surrogate_path: ./assets/protenix_fold_surrogate.json
+  rfree_weights:
+    affinity: 0.60
+    fold_confidence: 0.20
+    physical: 0.15
+    developability: 0.05
+
+  advantage_clip: 3.0
+  # Optional stronger-update sensitivity; 1.0 preserves the raw GRAFT
+  # surrogate used by the formal arms.
+  advantage_scale: 1.0
+  # Opt-in per-target normalization of the quantile-centred affinity
+  # advantage; historical/prospective arms keep this disabled.
+  advantage_normalize: false
+  # The formal path keeps the signed FM surrogate.  The nonnegative
+  # exponential variant is an opt-in update-stability diagnostic.
+  advantage_objective: signed_fm  # signed_fm | exp_weighted_fm | positive_fm
+  advantage_temperature: 0.1
+  entropy_penalty_weight: 0.01
+  # Optional auxiliary within-rollout CDR identity penalty.  Keep zero for
+  # the preregistered affinity-primary arm; diversity is monitored separately.
+  diversity_penalty_weight: 0.0
+  entropy_early_stop_bits: 1.0
+  psi_warn_threshold: 0.9
+  # Opt-in hard stop for prospective diagnostics; false preserves historical
+  # formal runs, which record the PSI gate without stopping on its warning.
+  psi_early_stop: false
+  # Historical RL re-noising samples t from the full [0,1) interval.  A
+  # truncated diagnostic such as [0.02,0.98] avoids the RDN clean-sample
+  # weight 1/(1-t)^2 singularity without changing the historical default.
+  renoise_t_min: 0.0
+  renoise_t_max: 1.0
+  # Rollout SDE noise remains at the inference default.  A separately named
+  # diversity diagnostic may override this value; it does not alter FM
+  # re-noising or the formal arm.
+  rollout_sc_scale_noise: 0.1
+  # Keep the inference-configured integrator on formal paths. Diagnostics may
+  # explicitly select vf, sc, vf_ss, or vf_ss_sc_sn.
+  rollout_sampling_mode: default  # default | vf | sc | vf_ss | vf_ss_sc_sn
+  # Historical iid initial reference noise. The antithetic option is an
+  # explicit pool-only diagnostic that pairs initial latent states as z/-z.
+  rollout_initial_noise_design: iid  # iid | antithetic
+  # Optional antithetic Brownian increments across SDE rollout slots; iid
+  # preserves the historical per-step noise path.
+  rollout_step_noise_design: iid  # iid | antithetic
+  # Optional post-flow candidate spread on native CDR latents; one preserves
+  # the historical decoded proposals.
+  rollout_latent_spread_scale: 1.0  # >=1
+  # Optional EMA shadow used only for rollout generation; zero preserves
+  # the historical on-policy path.
+  rollout_ema_decay: 0.0
+  # Opt-in oversampled rollout pool with greedy native-CDR diversity selection.
+  # One preserves the historical exactly-K rollout path.
+  rollout_pool_multiplier: 1
+  # Keep one candidate per simulation by default; diagnostics can use small
+  # chunks to reduce per-rollout launch overhead without changing selection.
+  rollout_pool_chunk_size: 1
+  # Opt-in update controller: reject/rollback the update that is first
+  # observed to produce a PSI collapse, then reduce the following LR.
+  diversity_backtrack: false
+  diversity_backtrack_max_retries: 3
+  diversity_backtrack_lr_factor: 0.25
+  # Reject only when the post-update probe is worse than the pre-update
+  # rollout by more than this delta; a high base-policy PSI alone is not an
+  # update failure.
+  diversity_backtrack_min_psi_delta: 0.0
+  diversity_backtrack_use_instant_psi: true
+  log_interval: 10
+  ckpt_interval: 50
+  ckpt_dir: ./runs/rgt_default
+  # Defaults to <ckpt_dir>/metrics.jsonl; each run override gets its own file.

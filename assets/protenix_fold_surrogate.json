@@ -1,0 +1,90 @@
+{
+  "artifact_type": "protenix_interface_confidence_surrogate",
+  "claim_boundary": "train-only fit; test split is calibration evidence for a fold-confidence surrogate, not a binding-affinity measurement or native-pose score",
+  "clip": [
+    0.0,
+    1.0
+  ],
+  "coef": [
+    -0.019534682438005917,
+    -0.020313978657910327,
+    0.06956921692224978,
+    -0.019534682438005227,
+    -0.01397962124384216,
+    -0.00651590235936786,
+    0.033242619409834376,
+    0.004026625622455231,
+    -0.046853258905421656,
+    -0.028872887580249217,
+    0.0648448501035352,
+    -0.04987805903431528
+  ],
+  "feature_mean": [
+    0.11488462570832121,
+    0.13885836119917244,
+    0.12687149345374718,
+    0.11488462570832121,
+    1.5498031503674614,
+    0.00014721636483606715,
+    0.3960250831647834,
+    1.7599894124499669,
+    0.9963309608345068,
+    0.002224813327231356,
+    0.21138154613466376,
+    0.10929800498753098
+  ],
+  "feature_names": [
+    "contact_ab_coverage",
+    "contact_ag_coverage",
+    "contact_mean_coverage",
+    "contact_count_per_ab",
+    "nearest_interface_distance_nm",
+    "soft_clash_fraction",
+    "interface_compactness",
+    "antibody_radius_nm",
+    "backbone_continuity",
+    "backbone_bond_deviation_nm",
+    "antibody_length_norm",
+    "antigen_length_norm"
+  ],
+  "feature_scale": [
+    0.05667282607951175,
+    0.11963667921095379,
+    0.0674794540729073,
+    0.05667282607951175,
+    0.30952541461992816,
+    0.0017703642395832946,
+    0.09757696520586905,
+    0.30820070480763995,
+    0.0030803973563403486,
+    0.0006411415705447414,
+    0.04181817379387639,
+    0.07250835601350103
+  ],
+  "intercept": 0.4177454987053757,
+  "label": "Protenix ipTM",
+  "model": "standardized_ridge_v1",
+  "rows_skipped": 0,
+  "rows_total": 2720,
+  "source_manifest": "external/protenix_priors/manifest.json",
+  "standardized_feature_clip": 5.0,
+  "test_metrics": {
+    "mean_pred": 0.32618770123441954,
+    "mean_true": 0.3758932736995337,
+    "n": 715,
+    "rmse": 0.17272510238061028,
+    "spearman": 0.4126001504246657,
+    "top20_enrichment": 1.3019608844881303,
+    "top20_mean_true": 0.4893983390989837
+  },
+  "train_metrics": {
+    "mean_pred": 0.41740633666218063,
+    "mean_true": 0.4174063366621807,
+    "n": 2005,
+    "rmse": 0.12034352703009105,
+    "spearman": 0.728830181845343,
+    "top20_enrichment": 1.4490839880812438,
+    "top20_mean_true": 0.6048568389808151
+  },
+  "work_root": "external/protenix_priors_work"
+}
