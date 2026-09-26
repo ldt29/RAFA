@@ -165,10 +165,6 @@ processes on shared machines; set `CUDA_VISIBLE_DEVICES` externally.
 
 ## Reproducibility notes
 
-- The default `generate.py` inference seed is 10 and the default generation
-  budget is 400 steps, matching the documented DockQ≈0.17 protocol.
-- `design_base.ckpt` is the shared-base envelope and `design_rl.ckpt` is the
-  RGT-150 envelope; neither is modified by the scripts.
 - Training outputs are written under `runs/`, and newly packaged checkpoints
   use a new filename by default.
 - Dataset paths and CUDA/PyTorch builds are environment-specific and are
