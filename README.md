@@ -24,8 +24,8 @@ design_rl.ckpt
 ```text
 checkpoints/
   ae.ckpt             frozen partial autoencoder
-  design_base.ckpt    shared-base design model
-  design_rl.ckpt      RGT-150 design model
+  design_base.ckpt    RAFA design model
+  design_rl.ckpt      RAFA(RL) design model
 src/
   proteinfoundation/  RAFA model, flow matching, datasets, and RGT trainer
   openfold/           local structural utilities
